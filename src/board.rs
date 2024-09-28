@@ -19,7 +19,7 @@ pub struct Board {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Direction {
+enum Direction {
     Up,
     Down,
     Left,
@@ -128,7 +128,7 @@ impl Board {
         new_board
     }
 
-    pub fn step(&self, (row, col): (usize, usize), dir: Direction) -> Option<(usize, usize)> {
+    fn step(&self, (row, col): (usize, usize), dir: Direction) -> Option<(usize, usize)> {
         match dir {
             Direction::Up => {
                 if row == 0 {
