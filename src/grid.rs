@@ -24,6 +24,17 @@ pub enum Direction {
     Right,
 }
 
+impl Direction {
+    pub fn op(self) -> Self {
+        match self {
+            Direction::Up => Direction::Down,
+            Direction::Down => Direction::Up,
+            Direction::Left => Direction::Right,
+            Direction::Right => Direction::Left,
+        }
+    }
+}
+
 impl Position {
     pub fn new(row: usize, col: usize) -> Self {
         Position { row, col }

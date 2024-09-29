@@ -10,6 +10,8 @@ pub mod equations;
 pub mod grid;
 pub mod matrix;
 
+const MODIFIERS: &[char] = &['H', 'V', 'O'];
+
 fn main() {
     //do_it_all("00000\n00000\n00000\n00000\n00000");
     println!("Welcome to the Lights-Out solver!");
@@ -47,29 +49,25 @@ fn main() {
         };
 
         if has_modifiers {
-            println!("Enter modifiers as a grid of spaces, \"H\"s, and \"V\"s.");
+            println!("Enter modifiers as a grid of spaces, \"H\"s, \"V\"s and \"O\"s.");
             for (row, line) in (0..board.height()).zip(std::io::stdin().lines()) {
                 match line {
                     Ok(line) => {
                         for (col, ch) in (0..board.width()).zip(line.chars()) {
                             if ch == ' ' {
                                 continue;
-                            } else if ch == 'H' {
+                            } else if MODIFIERS.contains(&ch) {
                                 match &mut board[Position { row, col }] {
                                     Some(cell) => {
-                                        cell.affects_up = false;
-                                        cell.affects_down = false;
-                                    }
-                                    None => {
-                                        println!("Modifier applied to empty cell!");
-                                        return;
-                                    }
-                                }
-                            } else if ch == 'V' {
-                                match &mut board[Position { row, col }] {
-                                    Some(cell) => {
-                                        cell.affects_left = false;
-                                        cell.affects_right = false;
+                                        if ch == 'H' {
+                                            cell.affects_up = false;
+                                            cell.affects_down = false;
+                                        } else if ch == 'V' {
+                                            cell.affects_left = false;
+                                            cell.affects_right = false;
+                                        } else if ch == 'O' {
+                                            cell.is_rigid = true;
+                                        }
                                     }
                                     None => {
                                         println!("Modifier applied to empty cell!");

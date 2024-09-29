@@ -37,6 +37,7 @@ pub struct Cell {
     pub affects_down: bool,
     pub affects_left: bool,
     pub affects_right: bool,
+    pub is_rigid: bool,
     pub starting_value: Bit,
 }
 
@@ -68,11 +69,12 @@ impl Display for Cell {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         writeln!(
             f,
-            "U:{} D:{} L:{} R:{} V:{}",
+            "U:{} D:{} L:{} R:{} R:{} V:{}",
             self.affects_up,
             self.affects_down,
             self.affects_left,
             self.affects_right,
+            self.is_rigid,
             self.starting_value
         )
     }
@@ -97,6 +99,7 @@ impl Cell {
         affects_down: bool,
         affects_left: bool,
         affects_right: bool,
+        is_rigid: bool,
         starting_value: Bit,
     ) -> Self {
         Cell {
@@ -104,11 +107,12 @@ impl Cell {
             affects_down,
             affects_left,
             affects_right,
+            is_rigid,
             starting_value,
         }
     }
     pub fn new_basic(b: Bit) -> Self {
-        Self::new(true, true, true, true, b)
+        Self::new(true, true, true, true, false, b)
     }
 }
 
@@ -185,9 +189,12 @@ impl BoardDescription {
             ] {
                 if let Some(adjacent_pos) = this_pos.step_in_bounds(&self.grid, dir) {
                     if let Some(adjacent_index) = index_of.get(&adjacent_pos) {
-                        if let Some(this_cell) = indexed_values.get(&var) {
-                            if this_cell[dir] {
-                                matrix_data[var][*adjacent_index] = Bit::On;
+                        if let Some(adjacent_cell) = indexed_values.get(adjacent_index) {
+                            let this_cell = indexed_values.get(&var).unwrap();
+                            if !this_cell.is_rigid {
+                                if adjacent_cell[dir.op()] {
+                                    matrix_data[var][*adjacent_index] = Bit::On;
+                                }
                             }
                         }
                         //matrix_data[var][*adjacent_index] = Bit::On;
