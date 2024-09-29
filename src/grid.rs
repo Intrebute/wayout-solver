@@ -12,8 +12,8 @@ pub struct Grid<V> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Position {
-    row: usize,
-    col: usize,
+    pub row: usize,
+    pub col: usize,
 }
 
 #[derive(Clone, Copy, Debug)]

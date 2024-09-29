@@ -1,5 +1,8 @@
+use std::io::Error;
+
 use board::BoardAssignment;
 use equations::Equations;
+use grid::Position;
 
 pub mod bit;
 pub mod board;
@@ -13,40 +16,78 @@ fn main() {
     println!();
     println!("Enter your board line by line, using 0 for an unlit cell, 1 for a lit cell, and space for a cell without a light. When finished, type 'done' on its own line.");
 
-    let mut board_text: String = String::new();
-
-    for line in std::io::stdin().lines() {
-        match line {
-            Ok(line) => {
-                if line == "done" {
-                    break;
-                }
-                if is_valid_line(&line) {
-                    board_text.push_str(&line);
-                    board_text.push('\n');
-                } else {
-                    println!("Invalid line. Please only enter 0's 1's and spaces.");
-                    continue;
-                }
-            }
-            Err(e) => {
-                println!("Error reading line: {}", e);
-                return;
-            }
-        }
-    }
-
-    board_text.pop();
-
-    let board = match board::parse_board(&board_text) {
-        Ok(board) => board.1,
+    let board_text = match read_board_text() {
+        Ok(board_text) => board_text,
         Err(e) => {
-            println!(
-                "Error parsing board with text {}.\nError: {}",
-                board_text, e
-            );
+            println!("Error reading line: {}", e);
             return;
         }
+    };
+
+    let board = {
+        let mut board = match board::parse_board(&board_text) {
+            Ok(board) => board.1,
+            Err(e) => {
+                println!(
+                    "Error parsing board with text {}.\nError: {}",
+                    board_text, e
+                );
+                return;
+            }
+        };
+
+        println!("Does board contain modifiers? [yes/no]");
+
+        let has_modifiers = match read_yes_no() {
+            Ok(has_modifiers) => has_modifiers,
+            Err(e) => {
+                println!("Error reading yes/no answer: {}", e);
+                return;
+            }
+        };
+
+        if has_modifiers {
+            println!("Enter modifiers as a grid of spaces, \"H\"s, and \"V\"s.");
+            for (row, line) in (0..board.height()).zip(std::io::stdin().lines()) {
+                match line {
+                    Ok(line) => {
+                        for (col, ch) in (0..board.width()).zip(line.chars()) {
+                            if ch == ' ' {
+                                continue;
+                            } else if ch == 'H' {
+                                match &mut board[Position { row, col }] {
+                                    Some(cell) => {
+                                        cell.affects_up = false;
+                                        cell.affects_down = false;
+                                    }
+                                    None => {
+                                        println!("Modifier applied to empty cell!");
+                                        return;
+                                    }
+                                }
+                            } else if ch == 'V' {
+                                match &mut board[Position { row, col }] {
+                                    Some(cell) => {
+                                        cell.affects_left = false;
+                                        cell.affects_right = false;
+                                    }
+                                    None => {
+                                        println!("Modifier applied to empty cell!");
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("Could not read line: {}", e);
+                        return;
+                    }
+                }
+            }
+        }
+
+        board
     };
 
     let (mut matrix, indexed_locations) = board.to_matrix();
@@ -152,6 +193,53 @@ fn main() {
     println!("{}", board);
     let board_matrix = board.to_matrix();
     println!("{}\n{}", board_matrix.0, base_matrix);*/
+}
+
+fn read_board_text() -> Result<String, Error> {
+    let mut board_text = String::new();
+
+    for line in std::io::stdin().lines() {
+        let line = line?;
+        if line == "done" {
+            break;
+        }
+        if is_valid_line(&line) {
+            board_text.push_str(&line);
+            board_text.push('\n');
+        } else {
+            println!("Invalid line. Please only enter 0's 1's and spaces.");
+            continue;
+        }
+    }
+
+    board_text.pop();
+
+    Ok(board_text)
+}
+
+fn read_single_line() -> Result<String, Error> {
+    match std::io::stdin().lines().next() {
+        Some(line) => {
+            return line;
+        }
+        None => {
+            println!("Could not read line.");
+            panic!();
+        }
+    }
+}
+
+fn read_yes_no() -> Result<bool, Error> {
+    loop {
+        let line = read_single_line()?;
+        if line == "yes" {
+            return Ok(true);
+        } else if line == "no" {
+            return Ok(false);
+        } else {
+            println!("Please input either \"yes\" or \"no\". [yes/no]");
+        }
+    }
 }
 
 pub fn is_valid_line(src: &str) -> bool {

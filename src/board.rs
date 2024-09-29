@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Display, ops::Index};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    ops::{Index, IndexMut},
+};
 
 use nom::{
     branch::alt,
@@ -29,11 +33,11 @@ pub struct BoardAssignment {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
-    affects_up: bool,
-    affects_down: bool,
-    affects_left: bool,
-    affects_right: bool,
-    starting_value: Bit,
+    pub affects_up: bool,
+    pub affects_down: bool,
+    pub affects_left: bool,
+    pub affects_right: bool,
+    pub starting_value: Bit,
 }
 
 impl Display for BoardAssignment {
@@ -136,6 +140,20 @@ impl BoardAssignment {
     }
 }
 
+impl Index<Position> for BoardDescription {
+    type Output = Option<Cell>;
+
+    fn index(&self, index: Position) -> &Self::Output {
+        &self.grid[index]
+    }
+}
+
+impl IndexMut<Position> for BoardDescription {
+    fn index_mut(&mut self, index: Position) -> &mut Self::Output {
+        &mut self.grid[index]
+    }
+}
+
 impl BoardDescription {
     pub fn to_matrix(&self) -> (Matrix, HashMap<usize, Position>) {
         let mut indexed_locations: HashMap<usize, Position> = HashMap::new();
@@ -158,10 +176,6 @@ impl BoardDescription {
         for var in 0..count {
             matrix_data[var][var] = Bit::On;
             let this_pos = indexed_locations[&var];
-            if var == 3 {
-                println!("Problematic case!");
-                println!("this_pos: {this_pos:?}");
-            }
 
             for dir in [
                 Direction::Up,
@@ -212,6 +226,14 @@ impl BoardDescription {
             new_grid[*loc] = Some(assignment.0[i]);
         }
         BoardAssignment { grid: new_grid }
+    }
+
+    pub fn height(&self) -> usize {
+        self.grid.get_height()
+    }
+
+    pub fn width(&self) -> usize {
+        self.grid.get_width()
     }
 }
 
