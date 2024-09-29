@@ -1,9 +1,10 @@
-use board::Board;
+use board::BoardAssignment;
 use equations::Equations;
 
 pub mod bit;
 pub mod board;
 pub mod equations;
+pub mod grid;
 pub mod matrix;
 
 fn main() {
@@ -103,7 +104,7 @@ fn main() {
             );
         }
     } else {
-        let mut min_moves_board_count: Option<(usize, Board, usize)> = None;
+        let mut min_moves_board_count: Option<(usize, BoardAssignment, usize)> = None;
         for (count, assignment) in results.into_iter().enumerate() {
             let assigned_board = board.assign_assignment(assignment, &indexed_locations);
             match &min_moves_board_count {
