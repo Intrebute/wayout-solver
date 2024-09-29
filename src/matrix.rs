@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::bit::Bit;
 
-/// Encodes a matrix as a column of rows.
+/// Encodes a matrix as a vector of rows.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Matrix {
     pub rows: usize,
