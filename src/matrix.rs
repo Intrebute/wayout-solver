@@ -11,14 +11,14 @@ pub struct Matrix {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Position {
+pub struct BoundedPosition {
     width: usize,
     height: usize,
     row: usize,
     col: usize,
 }
 
-impl Position {
+impl BoundedPosition {
     /// Steps to the right, unless at the edge. Returns true if the operation was successful, false if it would lead to an out of bounds position.
     pub fn step_right(&mut self) -> bool {
         if self.col + 1 == self.width {
@@ -127,7 +127,7 @@ impl Matrix {
         return true;
     }
 
-    pub fn get_at(&self, pos: Position) -> Bit {
+    pub fn get_at(&self, pos: BoundedPosition) -> Bit {
         self.data[pos.row][pos.col]
     }
 
@@ -164,7 +164,7 @@ impl Matrix {
     pub fn eliminate(&mut self) {
         self.sort_rows_by_leading_column();
 
-        let mut current_cell = Position {
+        let mut current_cell = BoundedPosition {
             width: self.cols,
             height: self.rows,
             row: 0,
@@ -244,7 +244,7 @@ impl Matrix {
     /// Collects the column indices which do not contain a leading 1.
     /// These correspond to the free parameters of the system.
     pub fn non_leading_columns(&self) -> Vec<usize> {
-        let mut current_cell = Position {
+        let mut current_cell = BoundedPosition {
             width: self.cols,
             height: self.rows,
             row: 0,
