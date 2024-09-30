@@ -3,7 +3,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Grid<V> {
     data: Vec<V>,
     width: usize,
@@ -159,6 +159,22 @@ impl<V> Grid<V> {
             width,
             height,
         })
+    }
+
+    pub fn new_full_lines(lines: Vec<Vec<V>>, width: usize, height: usize) -> Option<Self> {
+        if width == 0 || height == 0 {
+            return None;
+        }
+        if lines.len() == height {
+            if lines.iter().all(move |l| l.len() == width) {
+                return Some(Grid {
+                    data: lines.into_iter().flat_map(Vec::into_iter).collect(),
+                    width,
+                    height,
+                });
+            }
+        }
+        None
     }
 
     pub fn count(&self, p: impl Fn(&V) -> bool) -> usize {
