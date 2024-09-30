@@ -3,6 +3,7 @@ use std::{
     ops::{Add, AddAssign, Mul, MulAssign},
 };
 
+/// Encodes a single bit. We use `Bit` instead of `bool` as we need custom `Add` and `Mul` instances, since we are modelling the field with two values.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Bit {
     Off,

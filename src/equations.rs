@@ -10,12 +10,15 @@ use crate::{
 
 type Var = usize;
 
+/// Encodes a system of equations as a set of free variables, along with a set of equations encoding each non-free variable as a sum of
+/// free variables and a constant term.
 #[derive(Clone, Debug)]
 pub struct Equations {
     free_vars: HashSet<Var>,
     eqns: HashMap<Var, (HashSet<Var>, Bit)>,
 }
 
+/// Encodes an assignment of values to variables, as a map from variable indices to concrete bits.
 #[derive(Clone, Debug)]
 pub struct Assignment(pub HashMap<Var, Bit>);
 
@@ -39,6 +42,7 @@ impl Display for Assignment {
 }
 
 impl Assignment {
+    /// Renders an assignment as a string of `1`s and `0`s, where the `i`th character corresponds to the variable at index `i`.
     pub fn as_bitstring(&self) -> Option<String> {
         let mut res = String::new();
         for i in 0..self.0.len() {
@@ -95,7 +99,8 @@ impl Display for Equations {
 }
 
 impl Equations {
-    /// Assumes `matrix` is already in reduced row echelon form.
+    /// Computes a system of equations from `matrix`` in reduced row-echelon form. Does not check if `matrix`` is in reduced row-echelon form.
+    /// Will produce a system of equations of questionable quality otherwise.
     pub fn new(matrix: Matrix) -> Self {
         let free_vars = {
             let mut free_vars: HashSet<Var> = matrix.non_leading_columns().into_iter().collect();
@@ -130,7 +135,10 @@ impl Equations {
         Equations { free_vars, eqns }
     }
 
-    pub fn backfeed(&self, Assignment(valuation): Assignment) -> Assignment {
+    /// Uses a partial `assignment` of only free variables in `self`, and the equations of `self`, to compute a full assignment of all variables in `self`.
+    /// Does not check that `assignment` does in fact only assign values to free variables in `self`.
+    pub fn backfeed(&self, assignment: Assignment) -> Assignment {
+        let Assignment(valuation) = assignment;
         let mut results = HashMap::new();
 
         for (var, terms) in self.eqns.iter() {
@@ -149,6 +157,7 @@ impl Equations {
         Assignment(results)
     }
 
+    /// Enumerates the full assignment of all possible partial assignments in the free variables in `self`.
     pub fn enumerate_all_results(&self) -> Vec<Assignment> {
         let assignments = enumerate_all_assignments(&self.free_vars);
         if assignments.len() > 0 {
@@ -161,6 +170,7 @@ impl Equations {
     }
 }
 
+/// Produces all possible assignments of values for the variables in `vars`.
 pub fn enumerate_all_assignments(vars: &HashSet<Var>) -> Vec<Assignment> {
     let mut assignments = Vec::new();
     println!("Vars: {:?}", vars);

@@ -3,6 +3,7 @@ use std::{
     ops::{Index, IndexMut},
 };
 
+/// Describes a generic rectangular grid of `V`s.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Grid<V> {
     data: Vec<V>,
@@ -10,12 +11,14 @@ pub struct Grid<V> {
     height: usize,
 }
 
+/// Encodes a position in a grid.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Position {
     pub row: usize,
     pub col: usize,
 }
 
+/// Encodes the four orthogonal directions.
 #[derive(Clone, Copy, Debug)]
 pub enum Direction {
     Up,
@@ -25,6 +28,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    /// Computes the opposite direction of `self`.
     pub fn op(self) -> Self {
         match self {
             Direction::Up => Direction::Down,
@@ -40,14 +44,18 @@ impl Position {
         Position { row, col }
     }
 
+    /// Iterates through a the positions of a grid of size `width * height` in row-major order.
     pub fn iter_row_major(width: usize, height: usize) -> impl Iterator<Item = Position> {
         (0..height).flat_map(move |row| (0..width).map(move |col| Position { row, col }))
     }
 
+    /// Checks whether `self` is inside the bounds of `g`.
     pub fn is_in_bounds_of<V>(self, g: &Grid<V>) -> bool {
         self.col < g.width && self.row < g.height
     }
 
+    /// Computes the position of an adjacent position to `self` in direction `dir`. If the new position would be out of
+    /// bounds of `g`, returns None. Otherwise, returns `Some(new_position)`.
     pub fn step_in_bounds<V>(self, g: &Grid<V>, dir: Direction) -> Option<Self> {
         match dir {
             Direction::Up => {
@@ -121,6 +129,8 @@ impl<V: Display> Display for Grid<V> {
 }
 
 impl<V> Grid<V> {
+    /// Computes a new grid based on a partial representation of its rows. The width of the resulting grid will be the maximum length of elements in `lines`.
+    /// Its height will be the length of `lines`. Any line which does not have this maximum length will be filled with clones of `empty` to match its size.
     pub fn new_partial_lines(lines: Vec<Vec<V>>, empty: V) -> Option<Self>
     where
         V: Clone,
@@ -161,6 +171,9 @@ impl<V> Grid<V> {
         })
     }
 
+    /// Produces a new board based on a list of rows. `lines` must have `height` elements, and each element of `lines` must have `width` elements. Otherwise, returns None.
+    ///
+    /// Both `width` and `height` must be non-zero, otherwise returns None.
     pub fn new_full_lines(lines: Vec<Vec<V>>, width: usize, height: usize) -> Option<Self> {
         if width == 0 || height == 0 {
             return None;
@@ -177,14 +190,17 @@ impl<V> Grid<V> {
         None
     }
 
+    /// Counts the total number of elements in `self` that match the predicate `p`.
     pub fn count(&self, p: impl Fn(&V) -> bool) -> usize {
         self.data.iter().filter(|v| p(*v)).count()
     }
 
+    /// Iterates through all indices of rows within bounds of `self`.
     pub fn rows_iter(&self) -> impl Iterator<Item = usize> {
         0..self.height
     }
 
+    /// Iterates through all indeces of columns within bounds of `self.`
     pub fn cols_iter(&self) -> impl Iterator<Item = usize> {
         0..self.width
     }
@@ -205,6 +221,7 @@ impl<V> Grid<V> {
         self.width
     }
 
+    /// Produces a new grid, whose elements are those of `self` after applying the function `f`.
     pub fn map<W>(&self, f: impl Fn(&V) -> W) -> Grid<W> {
         Grid {
             data: self.data.iter().map(f).collect(),

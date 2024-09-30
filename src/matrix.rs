@@ -3,6 +3,9 @@ use std::fmt::Display;
 use crate::bit::Bit;
 
 /// Encodes a matrix as a vector of rows.
+///
+/// We do not use Grid as the backing structure as we have many matrix operations that are most effectively
+/// expressed in terms of row operations, which are easier to perform, on a vector of rows, rather than a monolithic row-major vector.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Matrix {
     pub rows: usize,
@@ -10,6 +13,7 @@ pub struct Matrix {
     pub data: Vec<Vec<Bit>>,
 }
 
+/// Encodes a position within a matrix.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct BoundedPosition {
     width: usize,
@@ -40,6 +44,7 @@ impl BoundedPosition {
     }
 }
 
+/// Finds the next active bit in `row`, starting at index `since`.
 pub fn first_active_column_since(row: &[Bit], since: usize) -> Option<usize> {
     for i in since..row.len() {
         if row[i] == Bit::On {
@@ -49,12 +54,9 @@ pub fn first_active_column_since(row: &[Bit], since: usize) -> Option<usize> {
     return None;
 }
 
+/// Finds the first active bit in `row`.
 pub fn get_leading_column(row: &[Bit]) -> Option<usize> {
     first_active_column_since(row, 0)
-}
-
-pub fn get_post_leading_column(row: &[Bit]) -> Option<usize> {
-    first_active_column_since(row, get_leading_column(row)? + 1)
 }
 
 impl Display for Matrix {
@@ -70,7 +72,12 @@ impl Display for Matrix {
 }
 
 impl Matrix {
+    /// Creates a new matrix from a vec of rows. `data` must have exactly `rows` entries, and each row in `data` must have `cols` elements.
+    /// If not, returns None. Furthermore, `rows` and `cols` must both be non-zero, otherwise returns `None`.
     pub fn new(data: Vec<Vec<Bit>>, rows: usize, cols: usize) -> Option<Self> {
+        if rows == 0 || cols == 0 {
+            return None;
+        }
         if data.len() != rows {
             return None;
         }
@@ -83,38 +90,7 @@ impl Matrix {
         Some(Matrix { rows, cols, data })
     }
 
-    pub fn new_from_bytes(data: &[&[u8]]) -> Option<Self> {
-        let rows = data.len();
-        if rows == 0 {
-            return None;
-        }
-        let cols = {
-            let cols = data[0].len();
-            for _row in 0..rows {
-                if data[0].len() == cols {
-                    continue;
-                } else {
-                    return None;
-                }
-            }
-            cols
-        };
-        if cols == 0 {
-            return None;
-        }
-        let data: Vec<Vec<Bit>> = data
-            .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|b| if *b == 0 { Bit::Off } else { Bit::On })
-                    .collect()
-            })
-            .collect();
-
-        Some(Matrix { rows, cols, data })
-    }
-
-    /// Attempts to augment self with a new column. Returns true if successful,
+    /// Attempts to augment self with a new column. `col` must have as many elements as `self` has rows. Returns true if successful,
     /// false otherwise. If false is returned, self remains untouched.
     pub fn augment_column(&mut self, col: &[Bit]) -> bool {
         if col.len() != self.rows {
@@ -127,10 +103,13 @@ impl Matrix {
         return true;
     }
 
+    /// Returns the value at position `pos`. Panics if out of bounds of `self`.
     pub fn get_at(&self, pos: BoundedPosition) -> Bit {
         self.data[pos.row][pos.col]
     }
 
+    /// Sorts rows based on how deep its leading column is. A row with a leftmost leading column is considered earlier in the ordering.
+    /// Further active bits in the column do not affect the order.
     pub fn sort_rows_by_leading_column(&mut self) {
         self.data
             .sort_unstable_by_key(|row| match get_leading_column(row) {
@@ -139,10 +118,12 @@ impl Matrix {
             });
     }
 
+    /// Swaps two rows at indices `row1` and `row2`. If both indices are the same, nothing happens.
     pub fn swap_rows(&mut self, row1: usize, row2: usize) {
         self.data.swap(row1, row2);
     }
 
+    /// Adds the rows at indices `source_row` and `target_row`, storing the result in `target_row`.
     pub fn elementary_add_row_to(&mut self, source_row: usize, target_row: usize) {
         let row = self.data[source_row].clone();
         for col in 0..self.cols {
@@ -150,6 +131,8 @@ impl Matrix {
         }
     }
 
+    /// Adds `source_row` onto every row whose `column` bit is `On`. Does not affect row at `source_row` itself.
+    /// Effectively eliminates every `On` bit in the entire column at index `column`.
     pub fn decimate_column_with_row(&mut self, source_row: usize, column: usize) {
         for row in 0..self.rows {
             if row == source_row {
@@ -161,6 +144,7 @@ impl Matrix {
         }
     }
 
+    /// Performs Gauss-Jordan elimination on `self` over the field of bits. Once complete, `self` will be in reduced row-echelon form.
     pub fn eliminate(&mut self) {
         self.sort_rows_by_leading_column();
 
@@ -205,6 +189,7 @@ impl Matrix {
         }
     }
 
+    /// Returns whether or not the entire row at index `row` is `Off`.
     pub fn is_row_zero(&self, row: usize) -> bool {
         for b in &self.data[row] {
             if *b == Bit::On {
@@ -231,14 +216,6 @@ impl Matrix {
             }
         }
         return self.rows;
-    }
-
-    pub fn extract_column(&self, column: usize) -> Vec<Bit> {
-        let mut col = vec![Bit::Off; self.rows];
-        for row in 0..column {
-            col[row] = self.data[row][column]
-        }
-        col
     }
 
     /// Collects the column indices which do not contain a leading 1.
@@ -280,6 +257,7 @@ impl Matrix {
         return free_cols;
     }
 
+    /// Debug function. Reports effects of calling `eliminate`.
     pub fn report_elimination(&mut self) {
         println!("Input:\n{}", self);
         self.eliminate();
@@ -289,6 +267,7 @@ impl Matrix {
         self.display_selected_columns(&non_l_cols);
     }
 
+    /// Debug function. Prints matrix, but only the columns indexed in `col_nums`. Other entries are displayed as a `.`.
     pub fn display_selected_columns(&self, col_nums: &[usize]) {
         for row in 0..self.rows {
             for col in 0..self.cols {

@@ -26,11 +26,14 @@ pub struct BoardDescription {
     grid: Grid<Option<Cell>>,
 }
 
-/// Describes an assignment on a board.
+/// Describes an assignment of bits on a board.
 pub struct BoardAssignment {
     grid: Grid<Option<Bit>>,
 }
 
+/// Encodes the intial value, and possible connections of a cell.
+///
+/// `is_rigid` simply encodes if neighboring cells can affect the value of the center cell.
 #[derive(Clone, Copy, Debug)]
 pub struct Cell {
     pub affects_up: bool,
@@ -111,6 +114,8 @@ impl Cell {
             starting_value,
         }
     }
+
+    /// Creates a new cell that both affects, and is affected by, every adjacent cell. Corresponds to a default lights-out cell.
     pub fn new_basic(b: Bit) -> Self {
         Self::new(true, true, true, true, false, b)
     }
@@ -139,6 +144,7 @@ impl Display for BoardDescription {
 }
 
 impl BoardAssignment {
+    /// Count the total number of `On` bits on the board. Corresponds to the number of button presses a board assignment uses.
     pub fn count_ones(&self) -> usize {
         self.grid.count(|oc| oc.is_some_and(|c| c == Bit::On))
     }
@@ -159,6 +165,11 @@ impl IndexMut<Position> for BoardDescription {
 }
 
 impl BoardDescription {
+    /// Computes the adjacency matrix of a board. Takes into account the modifiers a cell may have when computing it.
+    ///
+    /// Returns both the resulting matrix, and the enumeration of its cells, which is a map from indices to positions on the board.
+    /// This enumeration also corresponds to the variables in the system of equations in the matrix. In effect, both of them encode which variable
+    /// in the system of equations corresponds to which cell on the board.
     pub fn to_matrix(&self) -> (Matrix, HashMap<usize, Position>) {
         let mut indexed_locations: HashMap<usize, Position> = HashMap::new();
         let mut indexed_values: HashMap<usize, Cell> = HashMap::new();
@@ -197,7 +208,6 @@ impl BoardDescription {
                                 }
                             }
                         }
-                        //matrix_data[var][*adjacent_index] = Bit::On;
                     }
                 }
             }
@@ -210,7 +220,7 @@ impl BoardDescription {
             .map(|i| indexed_values[&i])
             .map(|b| b.starting_value + Bit::On)
             // We add On to everything as the constant row is equal to the current state,
-            // plus the target state, which is all Ons.
+            // plus the target state, which is all `On`s.
             .collect::<Vec<Bit>>();
 
         almost_matrix.augment_column(&constant_row);
@@ -218,11 +228,14 @@ impl BoardDescription {
         (almost_matrix, indexed_locations)
     }
 
+    /// Counts the total number of `On` bits in the entire matrix.
     pub fn count_ones(&self) -> usize {
         self.grid
             .count(|oc| oc.is_some_and(|c| c.starting_value == Bit::On))
     }
 
+    /// Produces a `BoardAssignment` based on the shape of `self`, the total assignment in `assignment`,
+    /// and the location of indices represented by `indexed_locations`.
     pub fn assign_assignment(
         &self,
         assignment: Assignment,

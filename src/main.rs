@@ -13,7 +13,6 @@ pub mod matrix;
 const MODIFIERS: &[char] = &['H', 'V', 'O'];
 
 fn main() {
-    //do_it_all("00000\n00000\n00000\n00000\n00000");
     println!("Welcome to the Lights-Out solver!");
     println!();
     println!("Enter your board line by line, using 0 for an unlit cell, 1 for a lit cell, and space for a cell without a light. When finished, type 'done' on its own line.");
@@ -169,28 +168,6 @@ fn main() {
             }
         }
     }
-
-    //do_it_all(&"1010\n0110\n11\n00 00\n   1 0\n   010");
-    /*let base_matrix = Matrix::new_from_bytes(&[
-        &[1, 1, 0, 0, 0, 0, 1],
-        &[1, 1, 1, 1, 0, 0, 0],
-        &[0, 1, 1, 0, 1, 0, 1],
-        &[0, 1, 0, 1, 1, 0, 0],
-        &[0, 0, 1, 1, 1, 1, 0],
-        &[0, 0, 0, 0, 1, 1, 1],
-    ])
-    .unwrap();
-    let mut matrix = base_matrix.clone();
-    matrix.report_elimination();
-    let eqns = Equations::new(matrix.clone());
-    println!("{}", eqns);
-    for res in eqns.enumerate_all_results() {
-        println!("{}", res.as_bitstring().unwrap());
-    }
-    let board = board::parse_board(&"0\n10\n110").unwrap().1;
-    println!("{}", board);
-    let board_matrix = board.to_matrix();
-    println!("{}\n{}", board_matrix.0, base_matrix);*/
 }
 
 fn read_board_text() -> Result<String, Error> {
@@ -215,6 +192,7 @@ fn read_board_text() -> Result<String, Error> {
     Ok(board_text)
 }
 
+/// Reads a single line from `stdin` and returns it as a `String`.
 fn read_single_line() -> Result<String, Error> {
     match std::io::stdin().lines().next() {
         Some(line) => {
@@ -227,6 +205,7 @@ fn read_single_line() -> Result<String, Error> {
     }
 }
 
+/// Reads a single `yes/no` response, and returns it as a `bool`.
 fn read_yes_no() -> Result<bool, Error> {
     loop {
         let line = read_single_line()?;
@@ -240,6 +219,7 @@ fn read_yes_no() -> Result<bool, Error> {
     }
 }
 
+/// Checks if `src` is a valid description of a board row.
 pub fn is_valid_line(src: &str) -> bool {
     for c in src.chars() {
         if c == '0' || c == '1' || c == ' ' {
@@ -251,7 +231,8 @@ pub fn is_valid_line(src: &str) -> bool {
     return true;
 }
 
-pub fn do_it_all(src: &str) {
+/// Old monolithic function that did the entire process based on a string input. No longer used.
+fn do_it_all(src: &str) {
     let board = board::parse_board(src)
         .expect("Could not parse board from input.")
         .1;
@@ -275,23 +256,3 @@ pub fn do_it_all(src: &str) {
         );
     }
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn eliminate_works() {
-        let mut matrix = Matrix::new([
-            [1, 1, 0, 0, 0, 0],
-            [1, 1, 1, 1, 0, 0],
-            [0, 1, 1, 0, 1, 0],
-            [0, 1, 0, 1, 1, 0],
-            [0, 0, 1, 1, 1, 1],
-            [0, 0, 0, 0, 1, 1],
-        ]);
-        matrix.eliminate();
-    }
-}
-*/
